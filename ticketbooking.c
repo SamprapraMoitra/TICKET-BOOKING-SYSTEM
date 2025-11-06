@@ -16,7 +16,6 @@
 #define MAX_NAME_LEN 100
 #define MAX_PHONE_LEN 20
 
-/* Seat status */
 typedef enum {SEAT_AVAILABLE = 0, SEAT_RESERVED = 1} SeatStatus;
 
 /* Seat structure */
@@ -31,31 +30,29 @@ typedef struct Booking {
     int booking_id;
     char customer_name[MAX_NAME_LEN];
     char phone[MAX_PHONE_LEN];
-    int *seat_indices;    /* dynamic array of indices of seats in event->seats[] */
+    int *seat_indices;  
     int seat_count;
     double amount_paid;
     time_t booking_time;
     struct Booking *next;
 } Booking;
 
-/* Event context (holds all state) */
 typedef struct {
     char event_name[128];
-    int rows;      /* e.g., 4 rows: A-D */
-    int cols;      /* seats per row */
-    int seat_count;/* rows * cols */
-    Seat *seats;   /* dynamic array of seats */
-    Booking *bookings_head; /* linked list head */
-    int next_booking_id; /* incremental booking id */
+    int rows;     
+    int cols;    
+    int seat_count;
+    Seat *seats; 
+    Booking *bookings_head;
+    int next_booking_id; 
 } Event;
 
-/* Utilities */
+
 static void flush_input() {
     int c;
     while ((c = getchar()) != '\n' && c != EOF) {}
 }
 
-/* Create event with rows x cols seats, price by row multiplier */
 Event *create_event(const char *name, int rows, int cols) {
     Event *ev = malloc(sizeof(Event));
     if (!ev) { perror("malloc"); exit(EXIT_FAILURE); }
@@ -67,7 +64,7 @@ Event *create_event(const char *name, int rows, int cols) {
     ev->seats = malloc(sizeof(Seat) * ev->seat_count);
     if (!ev->seats) { perror("malloc"); exit(EXIT_FAILURE); }
     ev->bookings_head = NULL;
-    ev->next_booking_id = 1001; /* starting ID */
+    ev->next_booking_id = 1001; 
 
     for (int r = 0; r < rows; ++r) {
         for (int c = 0; c < cols; ++c) {
@@ -78,10 +75,10 @@ Event *create_event(const char *name, int rows, int cols) {
             snprintf(label+1, sizeof(label)-1, "%d", c+1);
             label[0] = 'A' + r;
             label[1] = '\0';
-            /* build full label properly */
+            
             snprintf(ev->seats[idx].label, sizeof(ev->seats[idx].label), "%c%d", 'A' + r, c+1);
-            /* price scheme: front rows more expensive */
-            double base = 100.0; /* base price */
+           
+            double base = 100.0; 
             double multiplier = 1.0 + (double)(rows - 1 - r) * 0.15; /* earlier rows cost more */
             ev->seats[idx].price = base * multiplier;
             ev->seats[idx].status = SEAT_AVAILABLE;
@@ -90,10 +87,10 @@ Event *create_event(const char *name, int rows, int cols) {
     return ev;
 }
 
-/* Free event and bookings */
+
 void destroy_event(Event *ev) {
     if (!ev) return;
-    /* free bookings */
+
     Booking *cur = ev->bookings_head;
     while (cur) {
         Booking *n = cur->next;
@@ -105,7 +102,7 @@ void destroy_event(Event *ev) {
     free(ev);
 }
 
-/* Print seat map */
+
 void print_seat_map(Event *ev) {
     printf("\nEvent: %s — Seat Map (A = available, R = reserved)\n", ev->event_name);
     for (int r = 0; r < ev->rows; ++r) {
@@ -120,10 +117,10 @@ void print_seat_map(Event *ev) {
     printf("\n");
 }
 
-/* Find seat index by label like "A3". Returns -1 if not found */
+
 int find_seat_index(Event *ev, const char *label) {
     if (!label || strlen(label) < 2) return -1;
-    /* Normalize: uppercase letter + number */
+
     char letter = toupper(label[0]);
     int row = letter - 'A';
     if (row < 0 || row >= ev->rows) return -1;
@@ -134,7 +131,7 @@ int find_seat_index(Event *ev, const char *label) {
     return idx;
 }
 
-/* Display details of a seat */
+
 void print_seat_details(Event *ev, int idx) {
     if (idx < 0 || idx >= ev->seat_count) return;
     Seat *s = &ev->seats[idx];
@@ -142,14 +139,13 @@ void print_seat_details(Event *ev, int idx) {
            s->status == SEAT_AVAILABLE ? "Available" : "Reserved");
 }
 
-/* Check real-time availability and reserve seats temporarily (atomic-ish in single-thread) */
+
 int reserve_seats(Event *ev, int *indices, int count) {
-    /* Check availability */
+   
     for (int i = 0; i < count; ++i) {
         int idx = indices[i];
         if (idx < 0 || idx >= ev->seat_count) return -1;
-        if (ev->seats[idx].status != SEAT_AVAILABLE) return 0; /* someone already reserved */
-    }
+        if (ev->seats[idx].status != SEAT_AVAILABLE) return 0; 
     /* Reserve */
     for (int i = 0; i < count; ++i) {
         ev->seats[indices[i]].status = SEAT_RESERVED;
@@ -439,4 +435,5 @@ int main(void) {
     destroy_event(ev);
     return 0;
 }
+
 
