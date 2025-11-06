@@ -1,10 +1,4 @@
-/*
- Ticket Booking System (C, CLI, no globals)
- Single event, seat reservation, simulated payment, booking confirmations,
- real-time seat availability updates. Uses dynamic memory and structs.
- Compile: gcc ticket_booking.c -o ticket_booking
- Run: ./ticket_booking
-*/
+
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -18,7 +12,7 @@
     #include <unistd.h>
 #endif
 
-/* Constants (file-scope constants are fine) */
+
 #define MAX_NAME_LEN 100
 #define MAX_PHONE_LEN 20
 
@@ -173,7 +167,7 @@ void unreserve_seats(Event *ev, int *indices, int count) {
     }
 }
 
-/* Add booking to linked list and return pointer */
+
 Booking *create_booking(Event *ev, const char *name, const char *phone, int *seat_indices, int seat_count, double amount_paid) {
     Booking *b = malloc(sizeof(Booking));
     if (!b) { perror("malloc"); exit(EXIT_FAILURE); }
@@ -193,11 +187,7 @@ Booking *create_booking(Event *ev, const char *name, const char *phone, int *sea
     return b;
 }
 
-/* Simulated payment processing:
-   - Prints required prompts
-   - Uses random success/failure
-   - Returns 1 if success, 0 if failure
-*/
+
 int process_payment_simulation(double amount) {
     printf("\n--- Payment Processing ---\n");
     printf("Amount to pay: %.2f\n", amount);
@@ -230,12 +220,11 @@ int process_payment_simulation(double amount) {
         bank[strcspn(bank, "\n")] = '\0';
     }
 
-    /* Simulate network delay */
     printf("Processing");
     for (int i = 0; i < 3; ++i) { printf("."); fflush(stdout); sleep(1); }
     printf("\n");
 
-    /* Random success/failure: 90% success */
+    
     int r = rand() % 100;
     if (r < 90) {
         printf("Payment successful ✅\n");
@@ -246,7 +235,7 @@ int process_payment_simulation(double amount) {
     }
 }
 
-/* Make booking flow: select seats, process payment, confirm or rollback */
+
 void handle_new_booking(Event *ev) {
     char name[MAX_NAME_LEN];
     char phone[MAX_PHONE_LEN];
@@ -263,7 +252,6 @@ void handle_new_booking(Event *ev) {
     line[strcspn(line, "\n")] = '\0';
     if (strlen(line) == 0) { printf("No seats entered.\n"); return; }
 
-    /* parse tokens */
     int indices[256];
     int count = 0;
     char *tok = strtok(line, " \t,");
@@ -278,7 +266,7 @@ void handle_new_booking(Event *ev) {
     }
     if (count == 0) { printf("No valid seats entered.\n"); return; }
 
-    /* Remove duplicate indices in selection */
+
     for (int i = 0; i < count; ++i) {
         for (int j = i+1; j < count; ++j) {
             if (indices[i] == indices[j]) {
@@ -288,7 +276,7 @@ void handle_new_booking(Event *ev) {
         }
     }
 
-    /* Calculate total and show details */
+
     double total = 0.0;
     printf("\nSelected seats:\n");
     for (int i = 0; i < count; ++i) {
@@ -297,7 +285,7 @@ void handle_new_booking(Event *ev) {
     }
     printf("\nTotal amount: %.2f\n", total);
 
-    /* Reserve seats atomically (single threaded) */
+    
     int reserve_ok = reserve_seats(ev, indices, count);
     if (reserve_ok == 0) {
         printf("One or more seats have just been reserved by someone else. Please try again.\n");
@@ -307,22 +295,21 @@ void handle_new_booking(Event *ev) {
         return;
     }
 
-    /* Process payment */
     int payment_success = process_payment_simulation(total);
     if (!payment_success) {
-        /* rollback reservation */
+    
         unreserve_seats(ev, indices, count);
         printf("Booking aborted due to payment failure. Seats released.\n");
         return;
     }
 
-    /* Payment succeeded => finalize booking record */
+    
     create_booking(ev, name, phone, indices, count, total);
     printf("Booking confirmed! Booking ID: %d\n", ev->next_booking_id - 1);
     printf("A booking confirmation has been created for %s. Thank you!\n", name);
 }
 
-/* Print all bookings */
+
 void list_bookings(Event *ev) {
     if (!ev->bookings_head) {
         printf("No bookings yet.\n");
@@ -344,7 +331,7 @@ void list_bookings(Event *ev) {
     printf("\n");
 }
 
-/* Cancel booking by booking id; release seats and remove node; refund simulated */
+
 void cancel_booking(Event *ev) {
     printf("Enter Booking ID to cancel: ");
     int id;
@@ -362,7 +349,7 @@ void cancel_booking(Event *ev) {
         return;
     }
 
-    /* Simulate refund: 95% chance success */
+   
     printf("Processing refund of %.2f\n", cur->amount_paid);
     printf("Refund processing");
     for (int i = 0; i < 3; ++i) { printf("."); fflush(stdout); sleep(1); }
@@ -373,10 +360,10 @@ void cancel_booking(Event *ev) {
         return;
     }
 
-    /* Release seats */
+/
     unreserve_seats(ev, cur->seat_indices, cur->seat_count);
 
-    /* Remove booking node */
+   
     if (prev) prev->next = cur->next;
     else ev->bookings_head = cur->next;
 
@@ -386,7 +373,7 @@ void cancel_booking(Event *ev) {
     printf("Booking cancelled and seats released. Refund successful.\n");
 }
 
-/* Show seat availability summary */
+
 void availability_summary(Event *ev) {
     int available = 0;
     int reserved = 0;
@@ -397,7 +384,6 @@ void availability_summary(Event *ev) {
     printf("Total seats: %d | Available: %d | Reserved: %d\n", ev->seat_count, available, reserved);
 }
 
-/* Main menu loop */
 void menu_loop(Event *ev) {
     while (1) {
         printf("\n=== Ticket Booking System — Event: %s ===\n", ev->event_name);
@@ -439,12 +425,12 @@ void menu_loop(Event *ev) {
     }
 }
 
-/* Entry point */
+
 int main(void) {
     srand((unsigned int)time(NULL));
 
-    /* Create single event. You can change rows/cols here (no globals used). */
-    Event *ev = create_event("College Cultural Night YAGVIK", 4, 10); /* 4 rows (A-D), 10 seats each => 40 seats */
+    
+    Event *ev = create_event("College Cultural Night YAGVIK", 4, 10); 
 
     printf("Welcome to the Ticket Booking System (single event)\n");
     printf("Event: %s | Seats: %d\n", ev->event_name, ev->seat_count);
@@ -453,3 +439,4 @@ int main(void) {
     destroy_event(ev);
     return 0;
 }
+
